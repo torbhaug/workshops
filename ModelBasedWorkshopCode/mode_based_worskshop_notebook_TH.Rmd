@@ -1,0 +1,155 @@
+---
+title: "Summer School Prep"
+output: html_notebook
+---
+
+This notebook will do teh prep-work necessary ot try to be ready for 2025 model based
+neuroscience summer school
+
+First we load the package
+
+```{r}
+#install.packages("EMC2")
+library(EMC2)
+```
+The constraints of this package is as follows:
+- Data needs to be in a data.frame format
+- Column containing participant identifiers
+- Column containing responses (titled R)
+- Column containing response time in seconds (rt)
+
+I then downloaded the LVABvE, DDMavE and DDMae into my environment for data
+(from "osf.io/7euya/" website)
+
+First we need to load the data with the example dataset in the package
+and examine it
+```{r}
+dat <- forstmann
+head(dat)
+
+```
+
+In the data where correctness is not added automatically we need to create
+it 
+```{r}
+plot_density(dat, factors = c("E"), functions = list(correct = correct_fun), defective_factor = "correct")
+
+
+```
+
+
+
+To get a visual impression of the data we have loaded
+```{r}
+plot_density(dat, factors = c("S", "E"), layout = c(2,3))
+```
+
+To make it into a one subject analysis we extract the first subject from the dataset 
+```{r}
+dat_single <- dat[dat$subjects == levels(dat$subjects)[1],] # Selecting the first subject
+dat_single$subjects <- factor(dat_single$subjects)
+```
+
+
+We then sepcify the formula for the model
+
+```{r}
+formula <- list(v~0+S, a~E, t0~1, s~1, Z~1, sv~1, st0~1, SZ~1)
+# S = variable stating correct response
+# a ~ E - finding the intercept for the condition
+# t0 ~ 1 estimates a single parameter each for all of the cells for non-decision time
+# Z - response bias
+# sv between trial evidence-accumulation rate
+# st0 - non-decision time
+# SZ - starting points
+
+
+# Constants are specified at the rate of which sampling takes place
+
+# We then fit the formula to the data - that is wrong
+# We instead specify the model design
+design_DDMaE <- design(data = dat_single, model=DDM,
+                       constants = c(s=log(1)), # Variability set to constant because there is only one participant currently
+                       formula = formula)
+
+
+
+?design
+```
+
+To see how the function maps the variables there is an own function for doing that
+
+```{r}
+mapped_pars(design_DDMaE)
+#mapped_pars(design_MST)
+```
+
+We then move along to the Baeysian specification part of the model where we 
+- Apparently when there is a single subject model the package assumes normal priors
+
+We then set the the priors which the model uses
+
+```{r}
+# Set prior mean
+prior_mean <- c(v_Sleft=-2, v_Sright=2, a=log(1), a_Eneutral=log(1.5),
+                a_Eaccuracy=log(2), t0 = log(.2), Z=qnorm(.5), sv=log(.5))
+
+# Set prior standard deviation
+prior_sd <- c(v_Sleft=1,v_Sright=1,a=.3,a_Eneutral=.3,a_Eaccuracy=.3,
+           t0=.4,Z=1,sv=.4,SZ=1)
+
+# Construct prior
+prior_DDMaE <- prior(design_DDMaE,pmean = prior_mean, psd = prior_sd,
+                     type = "single")
+```
+
+
+We then display the priors for visual inspection
+
+```{r}
+plot(prior_DDMaE, layout = c(2,4))
+```
+When using different models there is a compare function which can be used to look at them in the package
+- Always a good idea to display beforehand tho
+
+
+What we need to do to get the trials sorted correctly is to parse them into correct and faulty trials (something about that in one of the lectures but not sure the degree of which it applies)
+
+
+To make it into an object (I think) with the make_emc function
+```{r}
+DDMaE <- make_emc(dat_single,design_DDMaE, prior=prior_DDMaE)
+```
+We then fit the model object to our data - which might take a jiffy
+
+```{r}
+DDMaE <- fit(DDMaE)
+```
+After having run this there are some tests which could be useful to do
+Including:
+```{r}
+?check
+check(DDMaE)
+```
+
+Summary:
+```{r}
+summary(DDMaE)
+```
+And comparison of priors and posteriors
+
+```{r}
+?plot_pars
+plot_pars(DDMaE)
+```
+
+After having done this we then want to see how the model fits the data
+
+In which we first use the predict function to use the model to predict our data
+and plot the different cdfs for comparison
+```{r}
+?predict
+pp_DDMaE <- predict(DDMaE)
+plot_cdf(DDMaE, pp_DDMaE)
+```
+

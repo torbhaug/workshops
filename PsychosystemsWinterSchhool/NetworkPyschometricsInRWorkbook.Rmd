@@ -1,0 +1,319 @@
+
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+
+
+Author: Torbjørn Haugan
+
+The purpose of this script is to serve as a working document for going thorugh the book 
+"Network Psychometrics in R"
+
+1. Network Science in R
+
+Definition:
+"Network models are statistical structures that characterize a multivariate probability distribution as a network"
+
+The relationship between theoretical/substantive and statistics can give a lot of opportunities, but may also lead to confusing them with eachother due to how connected they are in this approach.
+
+Network analyses entails conceiving of the emprical domain consisiting of different observed variables as a network. So called "systems thinking" is the idea that behaviour is closely tied to network structure, and often entails conceptualizing the phenomena of interest as an emergent property of the variables measured. 
+
+Analogical abduction, establishing a systematic correspondence between a source domain and a target domain so that one can create an explanatory model for the source so that one better can understand the target domain (Haig, 2014).
+
+Variables in network models are typically abstract entitites - therefore statistical relations are estimated and not observed per se.
+- They are generic tools and while being powerful statistically they require a lot of assumptions made in the theoretical vein to justify causal relationships (you have to get your assumptions in somehow)
+
+Since network models are searching through a very large statistical space they should be seen as hypothesis-generating and not hypothesis-testing models.
+
+
+Network theories
+
+  Network theories specify a set of componants and interactions aong components and posit that the resultant network can explain a phenomenon of interest. They distinguish themsevelves from the general network approach in that they sepicfy links between components and by that action becomes falsifiable. Simply said it identifies what the relevant entities in the system and how they interact.
+  
+Hysteresis, a physical phenomenon where the condition or response of an observed object is dependent on the objects history.
+- A key reason to use network theory
+
+
+The key to use these approaches to create models that are responsible in their inferences, even with the inability to accept the direct interpratation of models in most circumstances, is to establish models whcih are suitably robust against model misspesifications and data problems that they can serve as explanatory targets you can use to inform and validate theories.
+
+
+
+
+Chapter 3: Descriptive Analysis of Network Structure
+
+WHole is more than the sun of its parts can be quantified by network approaches provide fundamental insights into dynamics and emergent properties of simple elements.
+
+
+Centrality
+- Position and role of a node in a network
+- If it is connected to a bunch of stuff it is a central node of a network
+2 general categories of centrality measures
+1. Metrics fo direct connectivity
+- Node degree, tallying number of direct connections
+2. Mertics for indirect connectivity
+- Two step expected influence, takes into account every node that is connected 2 steps from the thing
+- Other rely on the distance between two nodes, aka the number edges required to go from one node ot another
+
+- Positive vs. negative edges is a way in which different centrality metrics handle differently
+
+
+
+Clustering
+- To what extent does the nodes in the network tend to cluster together
+- Local clustering takes one node and calculates a clusterign coefficient to estimate hwo many other nodes are in the same cluster as this one
+
+
+Global Network Properties
+This architecture is often referred to as the networks topological structure
+- The absolute clustering within the network
+- The presence of hubs within the network
+- Overall connectivity of the network (how dense or strong the connections are)
+
+Degree Distributions
+- Degree is how made edges a particular node has
+- What is often studied is to what extent degree is distribute across the network
+
+
+Clustering and small worldedness
+- In randomly generated networks it tends to be fairly easy to reach any node from any node, but they seem to have little overall clustering
+- If you construct a highly organized network (nodes only interact with their literal neighbours) they tend tohave a high degree of clustering and also a very high APL (how long parts of the network is from eachother)
+- If you were to construct a network able to achieve both high clustering and low APL tehn you would have a network displaying "small worldedness"
+- Bridge betweenedness, when a pair of node bridge otherwise largely separated clusters
+
+
+Community Detection
+Figuring out what the clusters of a network are (cluster belonging / dimensionality reduction)
+- Has become popular through exploratory graph aanlysis
+- Alternative to factor analysis in detecting the potential latent variable structure underlying the data
+
+
+
+
+
+CHapter 4: Constructign a graph network in R
+
+Using the package called qgraph
+
+```{r}
+# Uodating R tools to fit the current version
+R.version.string
+
+.libPaths()
+```
+
+
+```{r}
+# Installing qgraph - older version because the newest is not compatible
+
+#install.packages("rlang")
+#install.packages("Rcpp")
+#install.packages("igraph")
+#install.packages("qgraph")
+
+
+```
+
+
+Input
+- Edge list, a matri with 2 or 3 columns where each row represents and edge
+- First column, node of origin
+- Second column, node of destination
+- Third column (optional), edge weight
+
+Edge colors
+- Edges within a network is according ot the sign of the edge weight
+- No need for other arguments
+- Green means positive signed weight
+- Red means negative signed weight relation
+- By using the theme = "colorblind" argument in qgraph() it turns to blue-red
+
+
+
+
+```{r}
+library(qgraph)
+
+# Setting a matrix for the network
+W <- matrix(
+c(0, 0.5, 0.4, 0, 0, -0.1,
+0.5, 0, 0.3, -0.3, 0, 0,
+0.4, 0.3, 0, 0, 0, 0, 0, -0.3, 0, 0,
+0.4, 0.3, 0, 0, 0, 0.4, 0, 0.2,
+-0.1, 0, 0, 0.3, 0.2, 0),
+nrow = 6, ncol = 6, byrow = TRUE,
+)
+
+# Vizualising with qgraph¨
+qgraph(W, theme="colorblind")
+```
+
+
+
+
+Chapter 4: Constructing and Drawing Networks in Graphs
+
+We then give some commands for displaying groups
+
+```{r}
+groups <- c("Group 1", "Group 1", "Group 1", "Group 2", "Group 2", "Group 2")
+
+# And we then call the function while specifying sorting my groups
+qgraph(W, groups = groups, theme = "colorblind", layout = "spring")
+```
+
+If you want to have qualitative differences in what the weights so that when the cutoff value is reached it changes from scaling in width to only scale in color
+
+I you have edges that give ceiling values you coul use max, if it way to crowded you could use minmum argument
+
+Most importantly these values should be identical if you seek to compare different plots directly
+
+For having good reuslts when saving networks make sure to save directly to pdf and not thorugh some automatic R mufuckary
+
+
+Tryign to get out some descriptive stuff
+```{r}
+centrality(W, alpha = 1)
+```
+Plotting that stuff
+
+```{r}
+centralityPlot(W, scale = "raw0", include = c("Strength", "Closeness", "Betweenness", "ExpectedInfluence"))
+```
+
+
+Chapter 5: Association and Conditional Independence
+
+Say that you are interested in networks where you conceptualize nodes as variables or entities and the edges represent the relations between those entities.
+
+Absence of an edge will indicate a conditional independence between the nodes
+(conditional independece refers to the fact that knowlegde of the state of one will give no information about the other)
+
+Statistical independence are differnt from actual independce and can be described as such:
+One variable  can be said to be conditionally independent of another if the probability of observed A given B is the same as the probability of observing A generally.
+
+Statistical dependence are generally defined as the violation of independence.
+
+Where interpretations of dependencies become really apparent is when we start to consider 
+
+We generate a dataset and distributions for students omtivation and grades
+
+```{r}
+set.seed(1)
+N <- 10000
+motivation <- rnorm(N,0,1)
+difficulty <- runif(N,0,10)
+grade <- round(10 - difficulty + motivation)
+grade <- pmin(10, pmax(1, grade))
+diploma <- runif(N) < ifelse(grade >= 5.5, 0.75, 0.25)
+```
+
+
+Chapter 6: Pairwise Markov Random Fields
+
+There are at least 5 ways in which one can interpret a PMRF model
+1. Within a statistical model framework
+2. By showcasing predictive relationhsips
+3. By generating causal hypotheses
+4. As a model for generating data
+5. As an exploratory tool in factor analysis
+
+Partial correlation coefficient, measures the relationship between two variables while controlling for a "holding constant" - the effect of one or more of other variables
+- It is what you do when you add multiplication signs in regression analyses 
+
+It is wise to keep the impact of partial correlations in mind, for example if you see a strong negative relationship between two nodes it could be an idea to see if there is a partial correlation that is particularily influential in this result du to an interaction wiht another variable
+
+By using a model like PMRF one can generate data that would fit really well (both are models of variance-covariance structure) with the clusters in a network model representing latent variables in the data.
+
+Thus exploratory graph analysis can be used to find clusters aka hidden variables or meta-concepts from a set of smaller variables.
+
+
+We can create a Gaussian Graphical Model
+
+```{r}
+library(bootnet)
+
+# So if you have a dataset called Data the code would go something like
+
+network <- estimateNetwork(Data, default = "pcor") # Estimating the network
+plot(network)
+
+# And then if we want ot exclude the non-significant edges
+network <- estimateNetwork(Data, default = "pcor",
+                           threshold = "sig", alpha = 0.05
+                           )
+
+# If the data is not normally distributed you can use "spearman" in the default variable
+
+```
+
+
+Chapter 7: Estimating Network Structure Using Model Selection
+
+To not make overly convoluted networks it is standard to be quite conservative in what sort of edges you actually include in a network, especially if the power is naur amazing
+
+Model selection algorithms do this in 4 different ways
+
+1. Thresholding, estimate saturated model then remove based on threshold (typically significance)
+2. Pruning, estimate saturated model then take away due to some other criterion and the resulting model with some edges put to zero and then refitted to the data
+3. Model search, search to the entire potential space for the optimally fitted model accoring to some loss function
+4. Regularization, a trick used from machine learning to pull or put edges to zero
+
+Extended Bayesian Information Criterion (EBIC, Chen & Chen, 2008) has been shown to do well when for PMRF models 
+
+
+Ways to do model selection can be as follows
+
+```{r}
+model <- ggm(Data) %>% runmodel %>% prune(alpha = 0.05) # Pruning
+
+model <- ggm(Data, omega ="empty") %>% runmodel %>% stepup(criterion = "bic") # MOdel selection
+
+# You can also combine them and use a more advanced search algo
+model <- ggm(Data) %>% runmodel %>% prune(alpha = 0.05) %>% modelsearch(criterion = "bic")
+```
+
+
+
+Chapter 8: Network Stability, Comparison, and Replicability
+
+Due inherent uncertainty in parameter estimation from data we
+1. Cannot assume that an estimated network structure perfectly resembles a hypothetical "true" network generating structure
+2. We cannot assume that the exact same network will be obtained when analyzing a new sample
+
+For statistical comparison of models note that these are often developed for saturated models and might therefore not carry validity to approaches were edges have been removed.
+
+Confidence intervals can be estimated through a non-parametric bootstrap (Efron, 2019)
+
+Bootstrapping, resampling data with replacement
+
+Can find the confidence interval by getting the quanties 2.5% abd 97.5% of the bootstrapped samples
+- CI estimation can also be calculated based on the maximum likelihood estimation for both saturated and unsaturated networks but this relies on normality estimation which the boostrap does not
+- Bootstrapping canb e done with the bootnet package
+- Might wrongly estimate the values through BCI as it can force the estimation towards zero if the power is too low
+
+Network Comparison Test (Borkulo et al., 2021)
+Sought to develop a test to see if a pair of networks are significantly different in key network statistic
+- Null hypothesis being that the networks are not significantly different
+Validated on 3 network statistics
+1. Invariance of network structure
+2. Invariance of strength on an edge
+3. Invariance of global strength
+
+
+Chapter 9: Longditudinal Design Choices: Relating Data to Analysis  
+
+Cross-sectional analysis have been criticized by some for being a faulty approach for conflating between-person and within-person effects
+- Often with the opinion that in psychology it is the within-person effect which matter most
+- Similarly it can be argued that when using fixed effects only the effects on the average person is beign measured which does not predict muchg for individuals
+
+Molenaar (2004) argued that only when a concept called ergodicity holds can one state that cross-sectional and fixed effects 
+
+Ergodicity, entails that for the question you are asking every participant needs to be considered  replica of one another
+
+The GVAR package:
+Made for continous (and presumed normal) data
+- Every time-step is modelled as a gaussian graphical model for each participant
+- Contains self-loops (autoregressions) and edge between nodes (cross-lagged regression)
+- 
